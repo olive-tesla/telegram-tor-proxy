@@ -1,0 +1,6 @@
+services:
+  server:
+    build:
+      context: .
+    ports:
+      - "127.0.0.1:9090:9090"
