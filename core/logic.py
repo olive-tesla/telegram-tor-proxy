@@ -13,17 +13,18 @@ import json
 import subprocess
 import sys
 import time
+from subprocess import Popen
 from typing import Dict
 from colorama import Fore, Style, init as colorama_init
 from threading import Timer
-from start import CONFIG_FILE, TG_PROXY_LINK
-
+from core.constants import CONFIG_FILE
+from core.settings import TG_PROXY_LINK
 
 colorama_init(autoreset=True)
 
 
 def load_config() -> Dict|Exception:
-    """Загружает настройки из config.json."""
+    """Проверяет наличие config.json и загружает настройки из него."""
     # Проверяем, существует ли уже конфиг файл
     if not CONFIG_FILE.exists():
         return FileNotFoundError(f"{Fore.RED}[!]Файл конфигурации не найден по адресу: {CONFIG_FILE}")
@@ -33,23 +34,26 @@ def load_config() -> Dict|Exception:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             config = json.load(f)
     except Exception as err:
+        print(f"[!] Ошибка при чтении config.json \n {err}")
         return err
 
     # Проверяем обязательные ключи
-    required = ["tor_exe", "torrc_path", "socks_port"]
+    required = ["tor_exe", "torrc_path", "proxy_port", "is_docker"]
     for key in required:
         if key not in config:
             return KeyError(f"{Fore.RED}[!]В конфигурации отсутствует ключ '{key}'")
-
-
     return config
 
 
-def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int) -> tuple[bool, str] | Exception | None:
+def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int) -> tuple[bool, Popen[str]]:
     """Запускает процесс Tor и выводит статус в реальном времени.
     Запускает watchdog на 300с - если Tor не установит соединение за
     это время - убивает процесс (с попытками перезапуска)"""
 
+
+    tor_is_ready: bool = False
+    watchdog = None
+    process = None
     # Принты при начале работы с Tor
     print(f"\n{Fore.MAGENTA}{'=' * 60}")
     print(f"{Fore.CYAN}[*] ЗАПУСК TOR ПРОКСИ")
@@ -64,13 +68,13 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
                                    text=True,
                                    bufsize=1)
 
-        tor_is_ready = False
-
         # Запускаем таймер на 300с (5мин) - Если Tor не установит соединение - убиваем процесс и пробуем ещё раз.
         # Редко - соединение может занимать более 5мин. - тогда, отредактируйте таймер. Но чаще это проблема с мостами.
         watchdog = Timer(time_out, kill_process, args=[process])
         watchdog.start()
         print(f"{Fore.CYAN}[*] === watchdog запущен c тайм-аутом: {time_out} === ")
+
+
         #сборщик мусора, перестаёт выводить некоторые логи, по достижению лимита, если тор начинает ими спамить
         collector:int = 0
 
@@ -80,17 +84,24 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
             if "Bootstrapped 100%" in line and not tor_is_ready:
                 tor_is_ready = True
                 watchdog.cancel()
+
                 print(f"{Fore.WHITE}{line}")
+
+                #инструкции
                 print(f"\n{Fore.GREEN}{Style.BRIGHT}[!!!] СЕТЬ TOR ГОТОВА! [!!!]\n"
                       f"{Fore.CYAN}Ваш прокси теперь работает. \n"
                       f"\n{Fore.WHITE}В формате ссылки для добавления в Telegram:\n"
                       f"{Fore.YELLOW}{TG_PROXY_LINK}")
 
+                # инструкции
                 print(f"\n{Fore.WHITE}Скопируйте её в Telegram или откройте в браузере.\n"
                       f"{Fore.WHITE}Либо добавьте прокси вручную: (для десктоп приложения) \n"
                       f"{Fore.MAGENTA}'Settings'-'Advanced'-'Connection Type'-'Add Proxy' \n"
                       f" SOCKS5, Hostname:port- {Fore.MAGENTA}127.0.0.1:{socks_port}")
+
+
             # логика обработки логов тора (на случай ошибок)
+                #проблема с мостами
             elif "you must specify at least one bridge" in line and not tor_is_ready:
                 print(f"\n{Fore.RED}[!] Ошибка в работе Tor! Проблема с конфигом torrc!\n"
                           f"Видимо, указан флаг UseBridges 1 - Тор пытается использовать мост,\n"
@@ -101,18 +112,27 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
                           f"Bridge 107.191.102.246:11111 03F427B05F658D152B2DBB9A6B25FC722C831174\n"
                           f"Bridge [ЗДЕСЬ ЕЩЁ ОДИН ВАШ МОСТ, ВЫШЕ ПРИМЕР, ОН НЕ РАБОТАЕТ]\n"
                           f"Изначальный вид ошибки от Tor - {line}")
+
+                # перестаёт выводить эту строку в консоль, если тор начал ей спамить
             elif "Application request when we haven't used client functionality lately" in line:
                 collector += 1
                 if collector >= 2:
                     continue
                 elif collector == 1:
                     print(f"{Style.DIM}{line}")
+
+                    # проверяем застрял ли tor на этапе построения соединения
             elif "Stuck at" in line:
                 collector += 1
                 if collector >= 2:
                     print(f"\n{Fore.YELLOW}[*]Кажется, Tor застрял на этапе построения соединения... Но надежда ещё есть.")
+                    #is_tor_stuck = True
+                    #todo добавить логику перезапуска Tor\ротацию мостов здесь (перезапуск будет по отработке watchdog)
+                    # либо оставить просто watchdog, и передавать в него флаг is_tor_stuck (выше закомментирован)
+                    # если True, вместо попытки перезапуска Tor, запросить новые мосты (нужна логика их получения)
+
             else:
-                # Приглушённый лог Tor
+                # Штатный вывод логов Tor (Приглушённый)
                 print(f"{Style.DIM}{line}")
 
     except FileNotFoundError:
@@ -122,12 +142,14 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}[*] Завершение работы...\n"
               f"{Fore.YELLOW}[*] Прервано пользователем")
-        process.terminate()
         try:
             process.kill()
             print(f"{Fore.GREEN}[+] Прокси остановлен.")
         finally:
             sys.exit(1)
+
+    except Exception as err:
+        print(f"{err}")
 
     finally:
         watchdog.cancel()
@@ -154,13 +176,14 @@ def start_and_monitor_tor(config):
     """
     attempts = 0
     max_attempts = 2
+    process = None
 
     try:
         while attempts < max_attempts:
             success, process = run_tor_proxy(
             tor_exe=config["tor_exe"],
             torrc_path=config["torrc_path"],
-            socks_port=config["socks_port"],
+            socks_port=config["proxy_port"],
             time_out=config["time_out"]
             )
             if success:
@@ -182,10 +205,8 @@ def start_and_monitor_tor(config):
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}[*] Завершение работы...\n"
               f"{Fore.YELLOW}[*] Прервано пользователем")
-        try:
-            process.kill()
-        finally:
-            sys.exit(1)
+        process.kill()
+        sys.exit(1)
 
 
 
