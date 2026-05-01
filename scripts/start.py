@@ -44,7 +44,6 @@ def tor_download_manager() -> None:
     """Управляет процессом загрузки tor expert bundle,
     метод загрузки выбирается в блоке try:
      Не загружает сам напрямую, за это отвечает другая функция"""
-    TOR_EXE.mkdir(exist_ok=True)
     archive_path = BASE_DIR / ARCHIVE_NAME
     manual_download = True
 
