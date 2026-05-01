@@ -73,14 +73,14 @@ def create_environment(python_exe):
     print("[*] Установка зависимостей...")
     try:
         # сначала обновляем pip
-        subprocess.check_call([str(python_exe), "-m", "pip", "install", "--upgrade", "pip", "--quiet"])
+        subprocess.check_call([str(python_exe), "-m", "pip", "install", "--upgrade", "pip"])
 
         # Ставим всё из requirements.txt либо только colorama
         if os.path.exists(req_file):
-            subprocess.check_call([str(python_exe), "-m", "pip" "install", "-r", req_file, "--quiet"])
+            subprocess.check_call([str(python_exe), "-m", "pip", "install", "-r", req_file])
         else:
             print("[*] requirements.txt не найден, ставлю только colorama...")
-            subprocess.check_call([str(python_exe), "-m", "pip", "install", "colorama", "--quiet"])
+            subprocess.check_call([str(python_exe), "-m", "pip", "install", "colorama"])
     except Exception as err:
         print(f"-- Ошибка при установке зависимостей: {err}")
 
