@@ -79,7 +79,8 @@ def tor_download_manager() -> None:
                 tar.extractall(path=TOR_DIR)
         except Exception as err:
             raise RuntimeError(f"Ошибка распаковки: {err}")
-        finally:
+        else:
+            #удаляем архив, если успешно распаковали
             archive_path.unlink(missing_ok=True)
     print("[+] Загрузчик Tor завершил работу!")
 
@@ -221,12 +222,7 @@ def get_bridges_from_file() -> list[str] | None | Exception:
     # Проверяем, существует ли файл
     if not BRIDGES_FILE.exists():
         return bridges
-        #return FileNotFoundError(f"[!]Файл с мостами не найден по адресу: {BRIDGES_FILE}")
-
-
-        #todo добавить логику работы, если файл с мостами пустой.
-        # вариант - попытаться подключиться напрямую без мостов, убирая флаг UseBridges 1 в torrc
-        # либо вызвать здесь функцию получения новых мостов (сначала её нужно написать конечно)
+        #ЗДЕСЬ можно вызвать функцию получения новых мостов (сначала её нужно написать конечно)
 
     # Работа с файлом BRIDGES.txt, он существует
     try:
