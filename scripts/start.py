@@ -156,7 +156,6 @@ def download_with_pwsh(url, dest_path):
 
 def create_torrc(bridges=None) -> None:
     """Генерирует torrc с путями к файлам, портом и настройками для мостов."""
-#todo check encoding в этой функции
 
     # Убедиться, что сохраним пути с прямым слешем
     data_dir_win = str(DATA_DIR).replace("\\", "/")
@@ -175,9 +174,10 @@ GeoIPFile {data_dir_win}/geoip
 GeoIPv6File {data_dir_win}/geoip6
 # stdout - логи в консоль (по умолчанию)
 Log notice stdout
-# так можно сделать вывод логов в файл, с примером пути для windows
-# Log notice file D:/tor/log.txt
-{"UseBridges 1\n"}{"\n".join(bridges) if bridges else ""}
+# вывод "сырых" логов tor в файл (на случай проблем)
+Log notice file {BASE_DIR}/tor_logs.txt
+{"UseBridges 1" if bridges else ""}
+{"\n".join(bridges) if bridges else ""}
 """
     TORRC_PATH.write_text(torrc_content, encoding="utf-8")
     print("[+] Файл torrc создан.")
@@ -214,12 +214,15 @@ def add_proxy_to_telegram() -> None:
               f"\nКод ошибки:\n {err}.")
 
 
-def get_bridges_from_file() -> list[str] | Exception:
+def get_bridges_from_file() -> list[str] | None | Exception:
+    bridges = None
     """Читаем мосты из BRIDGES.txt."""
 
     # Проверяем, существует ли файл
     if not BRIDGES_FILE.exists():
-        return FileNotFoundError(f"[!]Файл с мостами не найден по адресу: {BRIDGES_FILE}")
+        return bridges
+        #return FileNotFoundError(f"[!]Файл с мостами не найден по адресу: {BRIDGES_FILE}")
+
 
         #todo добавить логику работы, если файл с мостами пустой.
         # вариант - попытаться подключиться напрямую без мостов, убирая флаг UseBridges 1 в torrc
@@ -228,12 +231,12 @@ def get_bridges_from_file() -> list[str] | Exception:
     # Работа с файлом BRIDGES.txt, он существует
     try:
         with open(BRIDGES_FILE, "r", encoding="utf-8") as f:
-            #todo check encoding
-
             #list comprehension - не пустую строку с мостом сохраняем в формате, понятном Tor: "{Bridge} {мост_из_файла}"
             bridges = [f"{"Bridge"} {stripped_line}" for line in f if (stripped_line:= line.strip())]
+
             #todo - для полной автоматизации - здесь должен быть полноценный "чекер" мостов, по хорошему
             # async\отдельный поток с чекером (сначала нужно автоматизировать получение мостов).
+            # вероятно это избыточно
             return bridges
 
     except Exception as err:
@@ -254,6 +257,7 @@ def check_is_port_used() -> bool:
             return s.connect_ex(('127.0.0.1', int(FINAL_PROXY_PORT))) == 0
 
     except (TypeError, ValueError, socket.error):
+        print("Ошибка при проверке занятости порта!")
         return False
 
 
