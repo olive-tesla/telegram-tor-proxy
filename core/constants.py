@@ -13,7 +13,7 @@ if platform == "win32":
 else:
     TOR_EXE = TOR_DIR / "tor" / "tor"
 
-ARCHIVE_NAME = "tor_expert_bundle.tar.gz"
+ARCHIVE_NAME = "tor_expert_bundle*.tar.gz"
 DEFAULT_PORT = 9090
 # порт по умолчанию (используется введённый от юзера | этот)
 # для справки: (по умолчанию, тор (если не переназначено в конфиге) попытается слушать порт 9050)
