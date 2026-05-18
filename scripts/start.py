@@ -1,26 +1,25 @@
 """
 Скрипт с логикой первого запуска и настройками работы:
-- Скачивает (если не нашёл в корне/tor) Tor Expert Bundle с офф. Сайта, используя PowerShell WebClient (на Windows)
+- Скачивает (если не нашёл в корне) Tor Expert Bundle с офф. Сайта, используя PowerShell WebClient (на Windows)
 - Распаковывает Tor архив в корень_скрипта/tor и сохраняет пути к файлам в config.json
 - Создаёт в корне скрипта config.json (локальный конфиг для скрипта) и torrc ("конфиг" тора)
 - Генерирует прокси в виде ссылки и автоматически пытается добавить их в Telegram (используя webbrowser)
 - Устанавливает зависимости (colorama, для красоты)
-- Функция check_environment() вызывается при каждом запуске скрипта.
 
 - Ожидаемая структура Tor файлов:
 
 Telegram_tor_proxy
     ├── start_proxy.bat # Файл для быстрого запуска скрипта
-    ├── start.py # "Установочный" модуль для первого запуска
-    ├── tor-proxy.py # Основной модуль, отвечает за работу Tor-прокси
-    ├── torrc # Конфигурация Tor (редактируется пользователем)
+    ├── scripts/start.py # "Установочный" модуль для первого запуска
+    ├── core/... # ядро скрипта, основная логика для работы Tor-прокси
+    ├── torrc # Конфиг Tor
     ├── config.json # Локальный конфиг скрипта с путями к файлам и т.д
-    │ └── ...
-    ├── tor ──├ # Папка с Tor Expert Bundle (распаковать сюда, при ручной загрузке)
+    ├─── ...
+    ├── tor ── # Папка с Tor Expert Bundle (распакуется сюда)
     │ ├── data ── ...
     │ ├── docs ── ...
     │ ├── tor ├── tor.exe
-    │ └─...   ├───── pluggable_transports ── lyrebird.exe # Для obfs4-мостов
+    │ └─...   ├───── pluggable_transports ── lyrebird.exe # Для obfs4/webtunnel/...-мостов
     └─...     ├...
 """
 
@@ -157,7 +156,7 @@ def download_with_pwsh(url, dest_path):
 
 def create_torrc(bridges=None) -> None:
     """Генерирует torrc с путями к файлам, портом и настройками для мостов."""
-    # DATA_DIR.mkdir(exist_ok=True)
+#todo check encoding в этой функции
 
     # Убедиться, что сохраним пути с прямым слешем
     data_dir_win = str(DATA_DIR).replace("\\", "/")
@@ -217,19 +216,23 @@ def add_proxy_to_telegram() -> None:
 
 def get_bridges_from_file() -> list[str] | Exception:
     """Читаем мосты из BRIDGES.txt."""
+
     # Проверяем, существует ли файл
     if not BRIDGES_FILE.exists():
         return FileNotFoundError(f"[!]Файл с мостами не найден по адресу: {BRIDGES_FILE}")
+
         #todo добавить логику работы, если файл с мостами пустой.
         # вариант - попытаться подключиться напрямую без мостов, убирая флаг UseBridges 1 в torrc
         # либо вызвать здесь функцию получения новых мостов (сначала её нужно написать конечно)
 
-    # Работа с файлом BRIDGES.txt
+    # Работа с файлом BRIDGES.txt, он существует
     try:
         with open(BRIDGES_FILE, "r", encoding="utf-8") as f:
-            # list comprehension не пустую строку с мостом сохраняем в формате, понятном Tor: "{Bridge} {мост_из_файла}"
+            #todo check encoding
+
+            #list comprehension - не пустую строку с мостом сохраняем в формате, понятном Tor: "{Bridge} {мост_из_файла}"
             bridges = [f"{"Bridge"} {stripped_line}" for line in f if (stripped_line:= line.strip())]
-            #todo - при полной автоматизации - здесь должен быть полноценный "чекер" мостов, по хорошему
+            #todo - для полной автоматизации - здесь должен быть полноценный "чекер" мостов, по хорошему
             # async\отдельный поток с чекером (сначала нужно автоматизировать получение мостов).
             return bridges
 

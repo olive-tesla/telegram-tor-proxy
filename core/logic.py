@@ -27,7 +27,7 @@ def load_config() -> Dict|Exception:
     """Проверяет наличие config.json и загружает настройки из него."""
     # Проверяем, существует ли уже конфиг файл
     if not CONFIG_FILE.exists():
-        return FileNotFoundError(f"{Fore.RED}[!]Файл конфигурации не найден по адресу: {CONFIG_FILE}")
+        return FileNotFoundError(f"[!]Файл конфигурации не найден по адресу: {CONFIG_FILE}")
 
     # Работа с файлом
     try:
@@ -54,6 +54,7 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
     tor_is_ready: bool = False
     watchdog = None
     process = None
+
     # Принты при начале работы с Tor
     print(f"\n{Fore.MAGENTA}{'=' * 60}")
     print(f"{Fore.CYAN}[*] ЗАПУСК TOR ПРОКСИ")
