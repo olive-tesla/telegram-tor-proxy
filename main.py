@@ -11,25 +11,29 @@
 Читайте README.md - там инструкция, где брать мосты и как их добавить.
 """
 from core import logic
-from core.utils import check_environment
+from core.utils import check_environment, install_dependencies
 from core.settings import IS_DOCKER
 from scripts import start
+from importlib.util import find_spec
 
 
 def main():
     ready = False
+
     # 1. Проверяем из-под какой ОС работаем (на будущее для кросс-платформенности) (отдельная логика под разные ОС)
+
     #current_os = check_os()
     # print(f"--- (ОС: {check_os()}) ---")
 
-    # 2. проверяем в докер-контейнере мы или нет
-    #is_docker = check_is_docker()
-
-    # 3. если мы не в контейнере - используем .venv
+    # 2. если мы не в контейнере - используем .venv
     if not IS_DOCKER:
         check_environment()
 
-    # Сценарии запуска (штатный - в else блоке).
+    # 3. устанавливаем зависимости (пропускаем, если установлено)
+    if find_spec("colorama") is None:
+        install_dependencies()
+
+    # 4. Выбор сценария запуска (штатный - в else блоке).
     if isinstance(status := logic.load_config(), Exception):
         # Проваливаемся внутрь только при ошибке с config.json (нормально при первом запуске, т.к конфиг ещё не создан)
 
@@ -43,7 +47,7 @@ def main():
                   f"'чистую' установку. Также проверьте torrc конфиг и файлы tor")
             start.create_config_json()
 
-    # Проверка текущего docker статуса из прошлого из конфига (если отличается - пересоздаём конфиг)
+    # 4.1 До-проверка docker статуса (скип если штатный запуск)
     elif IS_DOCKER != status["is_docker"]:
         print(f"Способ запуска изменился: is_docker{IS_DOCKER}, прошлый запуск: is_docker{status['is_docker']}")
         if start.setup():
@@ -52,6 +56,7 @@ def main():
     else:  # запуск Tor
         ready = True
 
+    # 5. Если всё готово - берём свежие мосты и вызываем логику работы с тор-прокси
     if ready:
         bridges = start.get_bridges_from_file()
         start.create_torrc(bridges)
