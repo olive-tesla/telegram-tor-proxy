@@ -6,6 +6,7 @@ import sys
 import venv  # noqa
 from core.constants import DEFAULT_PORT, BASE_DIR
 
+
 def get_proxy_hostname() -> str:
     """
     Вызывает check_is_docker(), в зависимости от результата возвращает нужный хост
@@ -63,17 +64,24 @@ def check_os() ->  str:
     return platform.system().lower()
 
 
-def create_environment(python_exe):
+def create_environment():
     print("-- Создание виртуального окружения...")
 
-    venv_dir = '.venv'
-    venv.create(venv_dir, with_pip=True)
-    req_file = 'requirements.txt'
+    try:
+        venv.create(".venv", with_pip=True)
+        install_dependencies(python_exe=os.path.join(BASE_DIR, ".venv", "Scripts", "python.exe"))
+    except Exception as err:
+        print(f"-- Ошибка при создании .venv: {err}")
 
+
+def install_dependencies(python_exe: str = os.path.join(BASE_DIR, ".venv", "Scripts", "python.exe")):
     print("[*] Установка зависимостей...")
+
+    req_file = "requirements.txt"
+
     try:
         # сначала обновляем pip
-        subprocess.check_call([str(python_exe), "-m", "pip", "install", "--upgrade", "pip"])
+        #subprocess.check_call([str(python_exe), "-m", "pip", "install", "--upgrade", "pip"])
 
         # Ставим всё из requirements.txt либо только colorama
         if os.path.exists(req_file):
@@ -89,37 +97,35 @@ def check_environment():
     # 1. Проверяем, запущены ли мы из .venv
     is_venv = sys.prefix != sys.base_prefix
 
+    #провалимся внутрь, только если скрипт работает не из-под .venv
     if not is_venv:
-        # Мы здесь, только если работаем не из .venv (пробуем найти и перезапуститься из-под него, если нет - создаём)
+        #пробуем найти и перезапуститься из-под него, если его нет - создаём
 
         # собираем пути (нужны для проверки наличия .venv)
         venv_dir = ".venv"
         venv_path = BASE_DIR / venv_dir
+        python_exe = os.path.join(BASE_DIR, '.venv', 'Scripts', 'python.exe')
 
-        python_exe = os.path.join(BASE_DIR, venv_dir, 'Scripts', 'python.exe')
-
-        # Проверяем наличие папки .venv
+        # Проверяем, что .venv существует (провалимся внутрь если найден)
         if venv_path.exists() and venv_path.is_dir():
-            # 3. Перезапускаем этот же скрипт, но уже из-под .venv
             print("Использую существующее виртуальное окружение (.venv)...")
-            # Sys.argv[0] хранит с чего наш скрипт запустился изначально. Для корректного перезапуска из-под .venv
             sys.exit(subprocess.run([python_exe, sys.argv[0]]).returncode)
+
         else:
             print(".venv нет, создаю окружение...")
-            # создаём окружение, функция из start.py
-            create_environment(python_exe)
+            create_environment()
             print('Виртуальное окружение создано. Продолжу работу из него...')
 
             # 3. Перезапускаем этот же скрипт, но уже из-под .venv
             sys.exit(subprocess.run([python_exe, sys.argv[0]]).returncode)
 
     else:
-        print(f"Используемый Python: {sys.executable}")
-        # print(f"Запущено в окружении: {sys.prefix}")
+        # print(f"Используемый Python: {sys.executable}")
+        print(f"Запущено в окружении: {sys.prefix}")
 
 
 def main():
-    print('abc')
+    print('use main.py as entry point')
 
 
 if __name__ == "__main__":
