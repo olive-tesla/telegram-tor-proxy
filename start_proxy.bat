@@ -1,12 +1,10 @@
 @echo off
-REM Устанавливаем кодировку UTF-8(для корректного вывода), переходим в директорию проекта
-cd /d "%~dp0"
 
 REM 1. Проверка наличия Python
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [!] Python не найден. Пожалуйста, установите его с python.org
-    echo При установке поставьте галочку "Add Python to PATH".
+    echo [!] Python was not found. Please, download it from: python.org
+    echo Check "Add Python to PATH" during setup.
     pause
     exit /b
 )
