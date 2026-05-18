@@ -126,11 +126,28 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
             elif "Stuck at" in line:
                 collector += 1
                 if collector >= 2:
+                    print(f"{Style.DIM}{line}")
                     print(f"\n{Fore.YELLOW}[*]Кажется, Tor застрял на этапе построения соединения... Но надежда ещё есть.")
+                    print(f"{Fore.YELLOW}[*]Попробуйте подождать 3+мин, если не подключится - используйте мосты.")
                     #is_tor_stuck = True
-                    #todo добавить логику перезапуска Tor\ротацию мостов здесь (перезапуск будет по отработке watchdog)
+
+                    # ВАЖНО! - у меня иногда тор подключался напрямую, спустя 60+ connections have failed (3+ минуты)
+                    # возможно имеет смысл оставить подключение напрямую или переход на него, если мосты не работают
+                    #т.к есть шанс, что даже при блокировке tor, он сможет подключиться напрямую, спустя много попыток
+                    # пример ниже
+
+                    # 19:01:45.000 [warn] 11 connections have failed:
+                    #19:04:03.000 [warn] 67 connections have failed:
+                    #19:04:04.000 [notice] Bootstrapped 14% (handshake): Handshaking with a relay
+                    #19:04:04.000 [notice] Bootstrapped 15% (handshake_done): Handshake with a relay done
+                    #19:04:04.000 [notice] Bootstrapped 75% (enough_dirinfo): Loaded enough directory info to build circuits
+                    #19:04:04.000 [notice] Bootstrapped 90% (ap_handshake_done): Handshake finished with a relay to build circuits
+                    #19:04:04.000 [notice] Bootstrapped 95% (circuit_create): Establishing a Tor circuit
+                    #19:04:05.000 [notice] Bootstrapped 100% (done): Done
+
+                    #todo 3/3 добавить логику перезапуска Tor\ротацию мостов здесь (перезапуск будет по отработке watchdog)
                     # либо оставить просто watchdog, и передавать в него флаг is_tor_stuck (выше закомментирован)
-                    # если True, вместо попытки перезапуска Tor, запросить новые мосты (нужна логика их получения)
+                    # если True, вместо попытки перезапуска Tor, запросить новые мосты (нужна логика их получения (1,2todo)
 
             else:
                 # Штатный вывод логов Tor (Приглушённый)
@@ -173,7 +190,7 @@ def start_and_monitor_tor(config):
     это состояние (был такой вывод или нет) хранится в переменной "success".
 
     Время ожидания до перезапуска (по умолчанию) - 300с. (5 мин.)
-    Попыток перезапуска (по умолчанию) - 2
+    Попыток перезапуска (по умолчанию) - 2. за перезапуск отвечает watchdog
     """
     attempts = 0
     max_attempts = 2
