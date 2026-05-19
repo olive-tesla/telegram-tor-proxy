@@ -10,8 +10,16 @@ TOR_DIR = BASE_DIR / "tor"
 DATA_DIR = TOR_DIR / "data"
 if platform == "win32":
     TOR_EXE = TOR_DIR / "tor" / "tor.exe"
+    # отсюда скрипт попытается скачать архив tor expert bundle, если не нашёл его в подпапке /tor
+    # TOR_DOWNLOAD_URL = (
+    #     "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.9/"
+    #     "tor-expert-bundle-windows-x86_64-15.0.9.tar.gz"
+    # )
+    TOR_DOWNLOAD_URL = "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.14/tor-expert-bundle-windows-x86_64-15.0.14.tar.gz"
+
 else:
     TOR_EXE = TOR_DIR / "tor" / "tor"
+    TOR_DOWNLOAD_URL = "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.14/tor-expert-bundle-linux-x86_64-15.0.14.tar.gz"
 
 ARCHIVE_NAME = "tor_expert_bundle*.tar.gz"
 DEFAULT_PORT = 9090
