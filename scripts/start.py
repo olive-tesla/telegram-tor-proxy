@@ -27,8 +27,7 @@ import sys
 import venv  # noqa
 
 from core.constants import TOR_EXE
-from core.settings import IS_DOCKER
-from core.utils import create_torrc, create_config_json, check_is_port_used, tor_download_manager, add_proxy_to_telegram
+from core.utils import create_torrc, create_config_json, check_is_port_used, tor_download_manager, add_proxy_to_telegram, IS_DOCKER
 
 
 def setup() -> bool:
@@ -45,7 +44,7 @@ def setup() -> bool:
     check_is_port_used()
 
     # 3. Создание torrc (Tor конфиг)
-    create_torrc(IS_DOCKER)
+    create_torrc()
 
     # 4. Сохраняем состояние в config.json (пути до файлов, порт прокси)
     create_config_json()

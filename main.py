@@ -11,8 +11,7 @@
 Читайте README.md - там инструкция, где брать мосты и как их добавить.
 """
 from core import logic
-from core.utils import check_environment, install_dependencies
-from core.settings import IS_DOCKER
+from core.utils import check_environment, install_dependencies, get_bridges_from_file, create_torrc, IS_DOCKER
 from scripts import start
 from importlib.util import find_spec
 
@@ -58,8 +57,8 @@ def main():
 
     # 5. Если всё готово - берём свежие мосты и вызываем логику работы с тор-прокси
     if ready:
-        bridges = start.get_bridges_from_file()
-        start.create_torrc(bridges)
+        bridges = get_bridges_from_file()
+        create_torrc(bridges)
         logic.main()
 
 

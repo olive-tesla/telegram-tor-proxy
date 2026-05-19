@@ -18,7 +18,7 @@ from typing import Dict
 from colorama import Fore, Style, init as colorama_init
 from threading import Timer
 from core.constants import CONFIG_FILE
-from core.settings import TG_PROXY_LINK
+from core.utils import TG_PROXY_LINK
 
 colorama_init(autoreset=True)
 
