@@ -10,8 +10,7 @@ import venv  # noqa
 import webbrowser
 from pathlib import Path
 from core.constants import BASE_DIR, DATA_DIR, TOR_DIR, DEFAULT_PORT, TORRC_PATH, TOR_EXE, CONFIG_FILE, BRIDGES_FILE, \
-    ARCHIVE_NAME
-from core.settings import FINAL_PROXY_PORT, FINAL_PROXY_HOSTNAME, IS_DOCKER, TOR_DOWNLOAD_URL, TG_PROXY_LINK
+    ARCHIVE_NAME, TOR_DOWNLOAD_URL
 
 
 def get_proxy_hostname() -> str:
@@ -350,6 +349,18 @@ def add_proxy_to_telegram() -> None:
 def main():
     print('use main.py as entry point')
 
+
+#  --- ДИНАМИЧЕСКИЕ КОНСТАНТЫ ---
+
+# получаем итоговые хост:порт
+FINAL_PROXY_PORT = get_proxy_port()
+FINAL_PROXY_HOSTNAME = get_proxy_hostname()
+
+# проверяем в докере контейнере мы или нет
+IS_DOCKER = check_is_docker()
+
+#генерируем прокси-ссылку для Telegram Desktop, на основе итоговых хост:порт
+TG_PROXY_LINK = f"tg://socks?server={FINAL_PROXY_HOSTNAME}&port={FINAL_PROXY_PORT}"
 
 if __name__ == "__main__":
     main()
