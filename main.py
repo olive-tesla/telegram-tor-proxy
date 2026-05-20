@@ -10,10 +10,10 @@
 
 Читайте README.md - там инструкция, где брать мосты и как их добавить.
 """
-from core import logic
-from core.utils import check_environment, install_dependencies, get_bridges_from_file, create_torrc, IS_DOCKER
-from scripts import start
+
 from importlib.util import find_spec
+from scripts import start
+from core.utils import check_environment, install_dependencies, get_bridges_from_file, create_torrc, IS_DOCKER
 
 
 def main():
@@ -33,6 +33,8 @@ def main():
         install_dependencies()
 
     # 4. Выбор сценария запуска (штатный - в else блоке).
+    # Импортируем logic после проверки окружения (.venv, зависимости и тд)
+    from core import logic
     if isinstance(status := logic.load_config(), Exception):
         # Проваливаемся внутрь только при ошибке с config.json (нормально при первом запуске, т.к конфиг ещё не создан)
 
