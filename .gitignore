@@ -5,3 +5,7 @@ __pycache__
 config.json
 torrc
 /tor
+tor_logs.txt
+script_logs.txt
+DEV.md
+/tests
