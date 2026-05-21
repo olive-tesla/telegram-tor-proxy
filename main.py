@@ -27,7 +27,7 @@ def main():
     ready = False
 
     # 1. запускаем логгер (log_to_file=True,
-    setup_logging(level="INFO", use_colors=True, log_to_file=True)
+    setup_logging(level="INFO", use_colors=True, log_to_file=False)
     logger = logging.getLogger(__name__)
 
     # 2. создание и перезапуск из-под .venv (игнорируем если в контейнере, бессмысленно)
