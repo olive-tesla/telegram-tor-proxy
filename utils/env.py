@@ -1,8 +1,9 @@
+import logging
 import subprocess
 import sys
 from pathlib import Path
 
-import logging
+from constants import BASE_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def restart_under_venv(venv_dir: Path) -> None:
         logger.error("Интерпретатор не найден: %s", python_exe)
         sys.exit(1)
 
-    logger.info("Перезапуск под %s...", python_exe)
+    logger.info("Перезапуск под %s...", python_exe.relative_to(BASE_DIR))
     # sys.argv содержит [скрипт, аргументы...]
     sys.exit(subprocess.run([str(python_exe), *sys.argv]).returncode)
 

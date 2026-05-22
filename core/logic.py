@@ -10,13 +10,14 @@
 """
 
 import json
+import logging
 import subprocess
 import sys
 import time
-import logging
 from subprocess import Popen
-from typing import Dict
 from threading import Timer
+from typing import Dict
+
 try:
     from colorama import Fore, Style, init as colorama_init
 
@@ -70,7 +71,7 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
     logger.info(f"\n{Fore.MAGENTA}{'=' * 80}\n"
                    f"{Fore.CYAN}{" " * 34}[*] ЗАПУСК TOR ПРОКСИ\n"
                    f"{Fore.WHITE}{" " * 34}[*] Адрес: 127.0.0.1  |  Порт: {socks_port}\n"
-                   f"{Fore.MAGENTA}{'=' * 80}\n")
+                   f"{Fore.MAGENTA}{'=' * 80}\n{Style.RESET_ALL}")
 
     # Логика работы с Tor
     try:
@@ -84,7 +85,7 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
         # Редко - соединение может занимать более 5мин. - тогда, отредактируйте таймер. Но чаще это проблема с мостами.
         watchdog = Timer(time_out, kill_process, args=[process])
         watchdog.start()
-        logger.info(f"{Fore.CYAN}[*] === watchdog запущен c тайм-аутом: {time_out} === ")
+        logger.info(f"{Fore.CYAN}[*] === watchdog запущен c тайм-аутом: {time_out} ==={Style.RESET_ALL}")
 
 
         #сборщик мусора, перестаёт выводить некоторые логи, по достижению лимита, если тор начинает ими спамить
@@ -115,21 +116,22 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
             # логика обработки логов тора (на случай ошибок)
             #проблема с мостами
             elif "you must specify at least one bridge" in line and not tor_is_ready:
-                logger.error(f"\n{Fore.RED}[!] Ошибка в работе Tor! Проблема с конфигом torrc!\n"
-                          "Видимо, указан флаг UseBridges 1 - Тор пытается использовать мост,\n"
-                          "Но не может его найти - Либо вы не добавили его, или добавили не верно.\n"
-                          "ЛИБО закомментируйте UseBridges 1 (если не хотите использовать мосты)\n"
-                          "ЛИБО добавьте корректно мосты! (РЕКОМЕНДУЕТСЯ), ниже пример как должно быть\n"
-                          "UseBridges 1\n"
-                          "Bridge 107.191.102.246:11111 03F427B05F658D152B2DBB9A6B25FC722C831174\n"
-                          "Bridge [ЗДЕСЬ ЕЩЁ ОДИН ВАШ МОСТ, ВЫШЕ ПРИМЕР, ОН НЕ РАБОТАЕТ]\n"
-                          f"Изначальный вид ошибки от Tor - {line}")
+                logger.critical("[!] Критическая ошибка в работе Tor! Проблема с конфигом torrc (с мостами)!\n", )
+                logger.warning("1. Если вы НЕ ХОТИТЕ использовать мосты - очистите BRIDGES.txt / крайняя мера - удалите.")
+                logger.warning("2. ХОТИТЕ использовать мосты - корректно добавьте их в BRIDGES.TXT!!! (РЕКОМЕНДУЕТСЯ)\n"
+                            "Вот пример, как должно быть:\n\n"
+                            "obfs4 85.165.253.3:9076 6EEE1B70630C2B1B30C02A1CEE18AE68C9A4A984"
+                            "cert=TFtuHtxQEwYTk1jEapXczAR8I5UbUh6dmZKMkbvtuAIhdtQsINhbPlwFzSgtdA351dyHSg iat-mode=0\n"
+                            "obfs4 85.165.253.3:9076 6EEE1B70630C2B1B30C02A1CEE18AE68C9A4A984 "
+                            "cert=TFtuHtxQEwYTk1jEapXczAR8I5UbUh6dmZKMkbvtuAIhdtQsINhbPlwFzSgtdA351dyHSg iat-mode=0\n")
+                logger.error("Изначальный вид ошибки от Tor -\n%s",line)
+                sys.exit(1)
 
                 # перестаёт выводить эту строку в консоль, если тор начал ей спамить
             elif "Application request when we haven't used client functionality lately" in line:
                 collector += 1
                 if collector >= 2:
-                    #todo перекинуть в logger.debug
+                    #todo перекинуть логи тора в logger.debug после bootsrapped 100%
                     continue
                 elif collector == 1:
                     logger.info(f"{Style.DIM}{line}")

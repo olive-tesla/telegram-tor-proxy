@@ -5,7 +5,6 @@
 import logging
 import os
 import sys
-from pathlib import Path
 
 from constants import BASE_DIR
 
@@ -16,13 +15,16 @@ try:
     COLORAMA_INSTALLED = True
 except ImportError:
     COLORAMA_INSTALLED = False
+    class EmptyColor:
+        def __getattr__(self, name): return ""
+    Fore = Style = EmptyColor()
 
 
 class ColoredFormatter(logging.Formatter):
     """Кастомный форматировщик с выровненными и цветными уровнями логов."""
 
-    # Шаблон: время | уровень (выровнен) | модуль (выровнен до 15 симв.) : сообщение
-    log_fmt = f"{Fore.WHITE}%(asctime)s{Style.RESET_ALL} %(levelname_colored)s {Fore.BLUE}%(filename)-15s{Style.RESET_ALL}: %(message)s"
+    # Шаблон: время | уровень (выровнен) | модуль (выровнен до 8 симв.) : сообщение
+    log_fmt = f"{Fore.WHITE}%(asctime)s{Style.RESET_ALL} %(levelname_colored)s {Fore.BLUE}%(filename)-8s{Style.RESET_ALL}: %(message)s"
 
     COLORS = {
         logging.DEBUG: Fore.CYAN,
@@ -71,7 +73,7 @@ def setup_logging(level: int | str = logging.INFO,use_colors: bool = True,log_to
         console_formatter = ColoredFormatter(datefmt="%H:%M:%S")
     else:
         console_formatter = logging.Formatter(
-            "%(asctime)s [%(levelname)-5s] %(filename)-15s: %(message)s",
+            "%(asctime)s [%(levelname)-5s] %(filename)-8s: %(message)s",
             datefmt="%H:%M:%S",
         )
 
@@ -91,7 +93,7 @@ def setup_logging(level: int | str = logging.INFO,use_colors: bool = True,log_to
                 #todo изменить разделение
 
         file_formatter = logging.Formatter(
-            "%(asctime)s [%(levelname)-5s] %(filename)-15s: %(message)s",
+            "%(asctime)s [%(levelname)-5s] %(filename)-8s: %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 

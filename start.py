@@ -27,9 +27,9 @@ Telegram_tor_proxy
     └─...     ├...
 """
 
+import logging
 import sys
 import venv  # noqa
-import logging
 
 from constants import TOR_EXE, TOR_DIR, ARCHIVE_PATH
 from utils.download import tor_download_manager
@@ -42,21 +42,25 @@ logger = logging.getLogger(__name__)
 
 
 def setup() -> bool:
-    logger.info("=== Настройка окружения Tor Proxy ===")
+    logger.info("\n=== Настройка окружения Tor Proxy ===\n")
 
     # 1. Проверка/загрузка Tor Expert Bundle (пока его нет - не можем создать torrc, config.json)
     if not TOR_EXE.is_file():
-        logger.info("Файлы Tor не найдены, начинаю установку...")
+        logger.debug("Файлы Tor не найдены, начинаю установку...")
         _tor_downloaded = tor_download_manager()
 
         # 2. Распаковка\установка Tor Expert Bundle
         if _tor_downloaded:
-            if _tor_downloaded.is_file():
-                # архив найден (загружен пользователем вручную)
-                logger.info("Архив с Tor (предположительно) найден по пути:\n %s", _tor_downloaded)
-                archive_extract(file_path=_tor_downloaded, extract_to=TOR_DIR)
-            else:
-                # Тор был успешно загружен скриптом
+            try:    #todo fix 'bool' object has no attribute 'is_file'
+                if _tor_downloaded.is_file():
+                    # архив найден (загружен пользователем вручную)
+                    logger.info("Архив с Tor (предположительно) найден по пути:\n [---] %s", _tor_downloaded)
+                    archive_extract(file_path=_tor_downloaded, extract_to=TOR_DIR)
+                else:
+                    # Тор был успешно загружен скриптом
+                    archive_extract(file_path=ARCHIVE_PATH, extract_to=TOR_DIR)
+            except Exception as err:
+                logger.debug("Ошибка в start.py перед распаковкой загруженного архива, %s", err)
                 archive_extract(file_path=ARCHIVE_PATH, extract_to=TOR_DIR)
             pass
     else:
@@ -71,7 +75,7 @@ def setup() -> bool:
 
     # 5. Сохраняем состояние в config.json (пути до файлов, порт прокси)
     create_config_json()
-    logger.info(" === Настройка завершена! ===")
+    logger.info("\n === Настройка завершена! ===\n")
 
     # 6. Автоматическое добавление прокси в телеграм (если не в контейнере)
     is_docker = is_running_in_docker()
@@ -86,13 +90,14 @@ def setup() -> bool:
         logger.warning(" === ВАЖНО - Ваше прокси работает ТОЛЬКО когда тор запущен и ТОЛЬКО когда он ===")
         logger.warning(" === установил соединение - Вы должны видеть Bootstrapped 100% в его выводе === .")
         logger.warning("=== Если соединение не доходит до Bootstrapped 100% - Смените мосты === ")
+        logger.warning("\nПроцесс установки завершён. Далее запускайте скрипт через start_proxy.bat или 'python main.py'")
 
     return True
 
 
 if __name__ == "__main__":
     try:
-        setup_logging()
+        setup_logging(level="INFO", use_colors=True, log_to_file=False)
         setup()
     except KeyboardInterrupt:
         logger.error("[!] Прервано пользователем.")
