@@ -1,10 +1,9 @@
+import logging
 import os
-import pathlib
 import subprocess
 import sys
 from pathlib import Path
 from shutil import which
-import logging
 
 from constants import TOR_DOWNLOAD_URL, ARCHIVE_PATH, EXTENSION_PATTERN, BASE_DIR, ARCHIVE_NAME
 from utils.env import is_running_in_docker
@@ -48,20 +47,21 @@ def tor_download_manager() -> Path|bool|None:
     # используем PowerShell в приоритете для загрузки
     if powershell_exists is not None:
         try:
-            logger.info("Пробую скачать через PowerShell...")
+            logger.debug("Пробую скачать через PowerShell...")
             if download_with_pwsh(url=TOR_DOWNLOAD_URL,dest_path=ARCHIVE_PATH, powershell_exe=powershell_exists):
                 logger.info("Загрузка прошла успешно!")
                 download_success = True
 
             else:
                 logger.error("[!] PowerShell не справился, загрузите Tor Expert Bundle вручную...\n"
-                             "[!] %s",TOR_DOWNLOAD_URL)
+                             "[!] %s\n[!] %s",TOR_DOWNLOAD_URL)
                 download_success = False
 
         except Exception as err:
             logger.error("В процессе загрузки Tor возникла ошибка:\n%s",err)
-            logger.error("[!] Загрузите Tor Expert Bundle вручную, положите архив в корень проекта...\n"
-                  "[!] %s",TOR_DOWNLOAD_URL)
+            logger.error("[!] Попробуйте ещё раз или загрузите Tor Expert Bundle вручную,\n"
+                         " Положите архив в корень проекта, ссылка ниже (кликабельно, через ctrl+клик)...\n"
+                  "[!] %s\n",TOR_DOWNLOAD_URL)
             download_success = False
 
     # если pwsh нет, пробуем через wget
@@ -84,7 +84,7 @@ def tor_download_manager() -> Path|bool|None:
             pass
     # todo можно добавить попытку загрузки через зеркало
 
-    logger.info("Установщик Tor завершил работу!")
+    logger.debug("Установщик Tor завершил работу!")
     return download_success
 
 
@@ -115,40 +115,59 @@ def download_with_pwsh(url: str, dest_path: Path, powershell_exe:str) -> bool:
     ps_script = r'''
     $Url = $env:PWSH_DOWNLOAD_URL
     $Path = $env:PWSH_DOWNLOAD_PATH
-
+    
+    $maxRetries = 3
+    $retryDelaySeconds = 2
+    $attempt = 0
+    $downloadSuccess = $false
+    
     $wc = $null
     $stream = $null
     $fileStream = $null
-
-    try {
-        $wc = New-Object System.Net.WebClient
-        $stream = $wc.OpenRead($Url)
-        $totalBytes = [int64]$wc.ResponseHeaders["Content-Length"]
-        $fileStream = [System.IO.File]::Create($Path)
-        $buffer = New-Object byte[] 128KB
-        $totalRead = 0
-
-        while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
-            $fileStream.Write($buffer, 0, $read)
-            $totalRead += $read
-            if ($totalBytes -gt 0) {
-                $percent = [Math]::Floor(($totalRead / $totalBytes) * 100)
-                $downloadedMB = [Math]::Round($totalRead/1MB, 1)
-                $totalMB = [Math]::Round($totalBytes/1MB, 1)
-                [Console]::Write("`rDownloaded $downloadedMB MB of $totalMB MB ($percent%) ")
+    do {
+        $attempt++
+        $wc = $null
+        $stream = $null
+        $fileStream = $null
+        $downloadSuccess = $false
+        try {
+            $wc = New-Object System.Net.WebClient
+            $stream = $wc.OpenRead($Url)
+            $totalBytes = [int64]$wc.ResponseHeaders["Content-Length"]
+            $fileStream = [System.IO.File]::Create($Path)
+            $buffer = New-Object byte[] 128KB
+            $totalRead = 0
+    
+            while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                $fileStream.Write($buffer, 0, $read)
+                $totalRead += $read
+                if ($totalBytes -gt 0) {
+                    $percent = [Math]::Floor(($totalRead / $totalBytes) * 100)
+                    $downloadedMB = [Math]::Round($totalRead/1MB, 1)
+                    $totalMB = [Math]::Round($totalBytes/1MB, 1)
+                    [Console]::Write("`rDownloaded $downloadedMB MB of $totalMB MB ($percent%) ")
+                }
+            }
+            $downloadSuccess = $true
+            Write-Host "`n[Download Completed.]"
+        }
+        catch {
+            if ($attempt -lt $maxRetries) {
+                Write-Warning "Download attempt $attempt/$maxRetries failed"
+                Write-Warning "Retrying in $retryDelaySeconds seconds..."
+                Start-Sleep -Seconds $retryDelaySeconds
+            }
+            else {
+                Write-Error "Download failed after $attempt attempt(s): $($_.Exception.Message)"
+                exit 1
             }
         }
-        Write-Host "`n[Download Completed.]"
-    }
-    catch {
-        Write-Error $_.Exception.Message
-        exit 1
-    }
-    finally {
-        if ($fileStream) { $fileStream.Dispose() }
-        if ($stream) { $stream.Dispose() }
-        if ($wc) { $wc.Dispose() }
-    }
+        finally {
+            if ($fileStream) { $fileStream.Dispose() }
+            if ($stream) { $stream.Dispose() }
+            if ($wc) { $wc.Dispose() }
+        }
+    } until ($downloadSuccess)
     '''
 
     env = os.environ.copy()
@@ -156,7 +175,7 @@ def download_with_pwsh(url: str, dest_path: Path, powershell_exe:str) -> bool:
     env["PWSH_DOWNLOAD_PATH"] = str(dest_path.as_posix()).replace("*", "")
 
     # 1. Уведомление пользователя
-    logger.info("Файл будет сохранен по пути: %s", env["PWSH_DOWNLOAD_PATH"])
+    logger.debug("Файл будет сохранен по пути: %s", env["PWSH_DOWNLOAD_PATH"])
     logger.info("Ниже появится прогресс-бар загрузки.")
 
     try:
@@ -168,7 +187,7 @@ def download_with_pwsh(url: str, dest_path: Path, powershell_exe:str) -> bool:
 
         if process.returncode != 0:
             logger.error("[ОШИБКА] Не удалось загрузить файл через Powershell")
-            logger.error("Пожалуйста, попробуйте ещё раз или скачайте файл вручную:\n%s", url)
+            #logger.error("Пожалуйста, попробуйте ещё раз или скачайте файл вручную:\n%s", url)
             return False
 
     except Exception as e:
