@@ -46,14 +46,14 @@ def load_config() -> Dict|Exception:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             config = json.load(f)
     except Exception as err:
-        logger.error(f"[!] Ошибка при чтении config.json \n {err}")
+        logger.error(f"Ошибка при чтении config.json \n {err}")
         return err
 
     # Проверяем обязательные ключи
     required = ["tor_exe", "torrc_path", "proxy_port", "is_docker"]
     for key in required:
         if key not in config:
-            logger.error(f"{Fore.RED}[!]В конфигурации отсутствует ключ '{key}'")
+            logger.error(f"В конфигурации отсутствует ключ '{key}'")
     return config
     #todo убрать или переместить проверку
 
@@ -101,16 +101,16 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
 
 
                 #инструкции
-                logger.warning(f"{Fore.GREEN}{Style.BRIGHT}[!!!] СЕТЬ TOR ГОТОВА! [!!!]")
-                logger.warning(f"{Fore.CYAN}Ваш прокси теперь работает.")
-                logger.warning(f"{Fore.WHITE}В формате ссылки для добавления в Telegram:")
-                logger.warning(f"{Fore.YELLOW}{TG_PROXY_LINK}")
+                logger.warning(f"{Fore.GREEN}[!!!] СЕТЬ TOR ГОТОВА! [!!!]")
+                logger.warning(f"{Fore.CYAN}Ваш прокси теперь работает.{Style.RESET_ALL}")
+                logger.warning(f"{Fore.WHITE}В формате ссылки для добавления в Telegram:{Style.RESET_ALL}")
+                logger.warning(f"{Fore.YELLOW}{TG_PROXY_LINK}{Style.RESET_ALL}")
 
                 # инструкции
                 logger.info(f"{Fore.WHITE}Скопируйте её в Telegram или откройте в браузере.")
-                logger.info(f"{Fore.WHITE}Либо добавьте прокси вручную: (для десктоп приложения)")
+                logger.info(f"{Fore.WHITE}Либо добавьте прокси вручную: (для десктоп приложения){Style.RESET_ALL}")
                 logger.info(f"{Fore.MAGENTA}'Settings'-'Advanced'-'Connection Type'-'Add Proxy'")
-                logger.info(f" SOCKS5, Hostname:port- {Fore.MAGENTA}127.0.0.1:{socks_port}")
+                logger.info(f" SOCKS5, Hostname:port- {Fore.MAGENTA}127.0.0.1:{socks_port}{Style.RESET_ALL}")
 
 
             # логика обработки логов тора (на случай ошибок)
@@ -172,12 +172,12 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
 
 
     except FileNotFoundError:
-        logger.error(f"{Fore.RED}[!] Не найден tor.exe: {tor_exe}")
-        logger.error(f"{Fore.RED}[!] Ожидаемый путь: `папка_проекта`/tor/tor/tor.exe")
+        logger.error("[!] Не найден tor.exe: %s",tor_exe)
+        logger.error("[!] Ожидаемый путь: `папка_проекта`/tor/tor/tor.exe")
 
     except KeyboardInterrupt:
-        logger.error(f"{Fore.YELLOW}[*] Завершение работы...")
-        logger.error(f"{Fore.YELLOW}[*] Прервано пользователем")
+        logger.info("[*] Завершение работы...")
+        logger.error("[*] Прервано пользователем")
         try:
             process.kill()
             logger.info(f"{Fore.GREEN}[+] Прокси остановлен.")
@@ -196,7 +196,7 @@ def run_tor_proxy(tor_exe: str, torrc_path: str, socks_port: int, time_out: int)
 def kill_process(proc):
     """Функция-страховка: сработает только если время выйдет"""
     if proc.poll() is None:
-        logger.error(f"\n{Fore.CYAN}[!] Превышено время ожидания построения цепочки Tor (5 мин). Рестарт...")
+        logger.error("\n[!] Превышено время ожидания построения цепочки Tor (5 мин). Рестарт...")
         proc.kill()
 
 
