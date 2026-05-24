@@ -61,7 +61,8 @@ def setup() -> bool:
                     archive_extract(file_path=ARCHIVE_PATH, extract_to=TOR_DIR)
             except Exception as err:
                 logger.debug("Ошибка в start.py перед распаковкой загруженного архива, %s", err)
-                archive_extract(file_path=ARCHIVE_PATH, extract_to=TOR_DIR)
+                archive_extract(file_path=str(ARCHIVE_PATH.as_posix()).replace("*", ""), extract_to=TOR_DIR)
+                # todo path fix
             pass
     else:
         logger.info("Tor уже присутствует, пропускаю загрузку.")
