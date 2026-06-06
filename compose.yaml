@@ -4,3 +4,18 @@ services:
     ports:
       - "127.0.0.1:${PORT:-9090}:9090"
     restart: unless-stopped
+
+  xray:
+    build: ./xray
+    profiles:
+      - with-xray
+    depends_on:
+      - tor-proxy
+    ports:
+      - "443:443"
+    volumes:
+      - xray_data:/etc/xray
+    restart: unless-stopped
+
+volumes:
+  xray_data:
