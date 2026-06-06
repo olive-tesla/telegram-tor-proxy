@@ -27,6 +27,9 @@
 **/tor
 config.json
 torrc
+tor_logs.txt
+script_logs.txt
 start_proxy.bat
+SETUP.bat
 LICENSE
 README.md
