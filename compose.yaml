@@ -1,6 +1,6 @@
 services:
-  server:
-    build:
-      context: .
+  tor-proxy:
+    build: .
     ports:
-      - "127.0.0.1:9090:9090"
+      - "127.0.0.1:${PORT:-9090}:9090"
+    restart: unless-stopped
