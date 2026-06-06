@@ -1,8 +1,8 @@
+import logging
 import os
 import socket
 import time
 import webbrowser
-import logging
 
 from constants import DEFAULT_PORT
 from utils.env import is_running_in_docker
@@ -27,7 +27,7 @@ def get_proxy_port() -> int:
     """
 
     # Приоритет переменной окружения (для Docker), иначе дефолт 9090
-    port = int(os.environ.get("APP_PORT", DEFAULT_PORT))
+    port = int(os.environ.get("PORT", DEFAULT_PORT))
 
     # if not is_port_free(get_proxy_hostname(),port):
     #     logger.error(f"Предупреждение: Кажется, порт {port} занят, но все равно будет использован. "
