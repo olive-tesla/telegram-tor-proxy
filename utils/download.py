@@ -69,11 +69,21 @@ def tor_download_manager() -> Path|bool|None:
     else:
         is_docker = is_running_in_docker()
         if not is_docker:
-            # логика загрузки на linux macos non-docker
-            if _download_with_wget(url=TOR_DOWNLOAD_URL,dest_path=ARCHIVE_PATH):
-                download_success = True
-            else:
-                download_success = False
+            try:
+                # логика загрузки на linux macos non-docker
+                if _download_with_wget(url=TOR_DOWNLOAD_URL,dest_path=ARCHIVE_PATH):
+                    download_success = True
+                else:
+                    logger.error("[!] Wget не справился, загрузите Tor Expert Bundle вручную...\n"
+                                 " Положите архив в корень проекта, ссылка ниже (кликабельно, через ctrl+клик)...\n"
+                                 "[!] %s\n", TOR_DOWNLOAD_URL)
+                    download_success = False
+            except Exception as err:
+                logger.error("В процессе загрузки Tor возникла ошибка:\n%s", err)
+                logger.error("[!] Попробуйте ещё раз или загрузите Tor Expert Bundle вручную,\n"
+                             " Положите архив в корень проекта, ссылка ниже (кликабельно, через ctrl+клик)...\n"
+                             "[!] %s\n", TOR_DOWNLOAD_URL)
+
 
 
         else:
