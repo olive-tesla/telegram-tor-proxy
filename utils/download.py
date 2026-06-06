@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from shutil import which
 
@@ -90,22 +91,30 @@ def tor_download_manager() -> Path|bool|None:
 
 def _download_with_wget(url: str, dest_path: str) -> bool:
     """Резервная загрузка через wget с прогресс-баром."""
-    try:
-        process = subprocess.Popen(
-            ["wget", "-O", dest_path, url],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,  # wget пишет прогресс в stderr
-            text=True,
-            encoding="utf-8"
-        )
-        for line in process.stdout:
-            print(line, end="", flush=True)
+    logger.info("Пробую загрузить Tor Expert Bundle через wget...")
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            logger.info(f"Попытка загрузки {attempt}/{max_retries}")
+            process = subprocess.Popen(
+                ["wget", "-O", dest_path, url],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,  # wget пишет прогресс в stderr
+                text=True,
+                encoding="utf-8"
+            )
+            for line in process.stdout:
+                print(line, end="", flush=True)
 
-        process.wait()
-        return process.returncode == 0
-    except Exception as e:
-        logger.error(f"\n[ОШИБКА] Не удалось загрузить файл через wget: {e}")
-        return False
+            process.wait()
+            if process.returncode == 0:
+                return True
+        except Exception as e:
+            logger.error(f"\n[ОШИБКА] Не удалось загрузить файл через wget: {e}")
+            return False
+        if attempt < max_retries:
+            time.sleep(2)
+    return False
 
 
 def download_with_pwsh(url: str, dest_path: Path, powershell_exe:str) -> bool:
