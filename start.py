@@ -30,8 +30,9 @@ Telegram_tor_proxy
 import logging
 import sys
 import venv  # noqa
+from pathlib import Path
 
-from constants import TOR_EXE, TOR_DIR, ARCHIVE_PATH
+from constants import TOR_EXE, TOR_DIR, ARCHIVE_PATH, TOR_DOWNLOAD_URL
 from utils.download import tor_download_manager
 from utils.env import is_running_in_docker
 from utils.file_manager import create_config_json, create_torrc, archive_extract
@@ -51,17 +52,21 @@ def setup() -> bool:
 
         # 2. Распаковка\установка Tor Expert Bundle
         if _tor_downloaded:
-            try:    #todo fix 'bool' object has no attribute 'is_file'
-                if _tor_downloaded.is_file():
+            try:    #todo вынести распаковку в функцию
+                if isinstance(_tor_downloaded, bool):
+                    if _tor_downloaded:
+                        # Тор был успешно загружен скриптом
+                        logger.info("Архив с Tor (предположительно) найден по пути:\n [---] %s", _tor_downloaded)
+                        archive_extract(file_path=ARCHIVE_PATH, extract_to=TOR_DIR)
+                    else:
+                        logger.error("Пожалуйста, попробуйте ещё раз или скачайте файл вручную:\n%s", TOR_DOWNLOAD_URL)
+                elif _tor_downloaded.is_file():
                     # архив найден (загружен пользователем вручную)
                     logger.info("Архив с Tor (предположительно) найден по пути:\n [---] %s", _tor_downloaded)
                     archive_extract(file_path=_tor_downloaded, extract_to=TOR_DIR)
-                else:
-                    # Тор был успешно загружен скриптом
-                    archive_extract(file_path=ARCHIVE_PATH, extract_to=TOR_DIR)
             except Exception as err:
                 logger.debug("Ошибка в start.py перед распаковкой загруженного архива, %s", err)
-                archive_extract(file_path=str(ARCHIVE_PATH.as_posix()).replace("*", ""), extract_to=TOR_DIR)
+                archive_extract(file_path=Path(str(ARCHIVE_PATH.as_posix()).replace("*", "")), extract_to=TOR_DIR)
                 # todo path fix
             pass
     else:
