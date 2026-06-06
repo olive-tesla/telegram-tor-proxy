@@ -1,10 +1,10 @@
 import json
-import tarfile
 import logging
+import tarfile
 from pathlib import Path
 
-from constants import ARCHIVE_PATH, TOR_DIR, DATA_DIR, TORRC_PATH, TOR_EXE, CONFIG_FILE, BRIDGES_FILE, BASE_DIR, \
-    DEFAULT_TIMEOUT
+from constants import TOR_DIR, DATA_DIR, TORRC_PATH, TOR_EXE, CONFIG_FILE, BRIDGES_FILE, BASE_DIR, \
+    DEFAULT_TIMEOUT, LYREBIRD_EXE
 from utils.env import is_running_in_docker
 from utils.proxy import FINAL_PROXY_PORT, FINAL_PROXY_HOSTNAME
 
@@ -60,10 +60,10 @@ def create_torrc(bridges=None) -> None:
 SocksPort {FINAL_PROXY_PORT if not is_running_in_docker() else f"{FINAL_PROXY_HOSTNAME}:{FINAL_PROXY_PORT}"}
 CookieAuthentication 1
 DormantCanceledByStartup 1
-#ClientTransportPlugin conjure exec {tor_dir_win}/tor/pluggable_transports/lyrebird.exe
-ClientTransportPlugin webtunnel exec {tor_dir_win}/tor/pluggable_transports/lyrebird.exe
-ClientTransportPlugin obfs4 exec {tor_dir_win}/tor/pluggable_transports/lyrebird.exe
-ClientTransportPlugin snowflake exec {tor_dir_win}/tor/pluggable_transports/lyrebird.exe
+#ClientTransportPlugin conjure exec {tor_dir_win}/tor/pluggable_transports/{LYREBIRD_EXE}
+ClientTransportPlugin webtunnel exec {tor_dir_win}/tor/pluggable_transports/{LYREBIRD_EXE}
+ClientTransportPlugin obfs4 exec {tor_dir_win}/tor/pluggable_transports/{LYREBIRD_EXE}
+ClientTransportPlugin snowflake exec {tor_dir_win}/tor/pluggable_transports/{LYREBIRD_EXE}
 DataDirectory {data_dir_win}
 GeoIPFile {data_dir_win}/geoip
 GeoIPv6File {data_dir_win}/geoip6

@@ -11,11 +11,13 @@ DATA_DIR = TOR_DIR / "data"
 
 if platform == "win32":
     TOR_EXE = TOR_DIR / "tor" / "tor.exe"
+    LYREBIRD_EXE = "lyrebird.exe"
     # отсюда скрипт попытается скачать архив tor expert bundle, если не нашёл его в подпапке /tor
     TOR_DOWNLOAD_URL = "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.14/tor-expert-bundle-windows-x86_64-15.0.14.tar.gz"
 
 else:
     TOR_EXE = TOR_DIR / "tor" / "tor"
+    LYREBIRD_EXE = "lyrebird"
     TOR_DOWNLOAD_URL = "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.14/tor-expert-bundle-linux-x86_64-15.0.14.tar.gz"
 
 EXTENSION_PATTERN = "*.tar.gz"
